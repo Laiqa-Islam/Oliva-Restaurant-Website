@@ -1,0 +1,82 @@
+import {reducedMotion,clamp,mix,ease,range} from './motion-utils.js';
+export function initHomeMotion(){
+if(!document.querySelector('.hero-runway'))return;
+const header=document.querySelector('.header');
+const heroRunway=document.querySelector('.hero-runway');
+const heroMedia=document.querySelector('.hero-media');
+const heroWord=document.querySelector('.hero-word');
+const heroLetters=[...heroWord.children];
+const heroScript=document.querySelector('.hero-script');
+const heroFilmTitle=document.querySelector('.hero-film-title');
+const heroBottom=document.querySelector('.hero-bottom');
+const storyRunway=document.querySelector('.story-runway');
+const storyTitle=document.querySelector('.story-title');
+const storyBottom=document.querySelector('.story-bottom');
+const orbitImages=[...document.querySelectorAll('.orbit')];
+const dishRunway=document.querySelector('.dish-runway');
+const features=[...document.querySelectorAll('.feature-dish')];
+const dishDots=[...document.querySelectorAll('.dish-progress span')];
+const filmRunway=document.querySelector('.film-runway');
+const kitchenFilm=document.querySelector('.kitchen-film');
+const kitchenTitle=document.querySelector('.kitchen-title');
+const momentsRunway=document.querySelector('.moments-runway');
+const galleryTrack=document.querySelector('.gallery-track');
+const galleryLine=document.querySelector('.gallery-line span');
+const pageProgress=document.querySelector('.page-progress');
+let motionFrame=0;
+const progressFor=element=>{const rect=element.getBoundingClientRect();return {rect,p:clamp(-rect.top/Math.max(1,rect.height-innerHeight))}};
+function updateMotion(){
+ motionFrame=0;
+ const hero=progressFor(heroRunway),story=progressFor(storyRunway),dishes=progressFor(dishRunway),film=progressFor(filmRunway),gallery=progressFor(momentsRunway);
+ header.classList.toggle('scrolled',scrollY>50);
+ const dishIndex=dishes.p<.42?0:dishes.p<.76?1:2;
+ const overFilm=(hero.rect.top<72&&hero.rect.bottom>72&&hero.p>.52)||(dishes.rect.top<72&&dishes.rect.bottom>72&&dishIndex!==1)||(film.rect.top<72&&film.rect.bottom>72);
+ header.classList.toggle('over-film',overFilm);
+ pageProgress.style.transform=`scaleX(${scrollY/Math.max(1,document.documentElement.scrollHeight-innerHeight)})`;
+ if(reducedMotion)return;
+ const narrow=innerWidth<=760, hp=ease(range(hero.p,0,.87));
+ heroMedia.style.left=`${mix(narrow?19:34,0,hp)}%`;
+ heroMedia.style.top=`${mix(narrow?24:17,0,hp)}%`;
+ heroMedia.style.width=`${mix(narrow?62:32,100,hp)}%`;
+ heroMedia.style.height=`${mix(narrow?48:66,100,hp)}%`;
+ heroMedia.style.transform=`rotate(${mix(-7,0,hp)}deg)`;
+ heroMedia.style.clipPath=`inset(0 round ${mix(48,0,hp)}% ${mix(48,0,hp)}% 0 0)`;
+ heroMedia.querySelector('.hero-media-shade').style.opacity=hp;
+ heroWord.style.opacity=1-range(hero.p,.08,.57);
+ heroWord.style.transform=`translateY(${-hp*100}px)`;
+ heroLetters.forEach((letter,index)=>{letter.style.translate=`${(index-2)*hp*65}px 0`;letter.style.rotate=`${(index-2)*hp*4}deg`});
+ heroScript.style.opacity=1-range(hero.p,0,.3);
+ heroScript.style.translate=`${hp*90}px ${-hp*50}px`;
+ const filmText=range(hero.p,.38,.76);
+ heroFilmTitle.style.opacity=filmText;
+ heroFilmTitle.style.transform=`translateY(${(1-filmText)*65}px)`;
+ heroBottom.style.color=hero.p>.34?'var(--paper)':'var(--ink)';
+ heroBottom.style.opacity=1-range(hero.p,.85,1);
+ const sp=ease(range(story.p,0,.88));
+ const orbitDirections=[[-1,-.7],[1,-.6],[-1,.7],[1,.7]];
+ orbitImages.forEach((image,index)=>{const [x,y]=orbitDirections[index];const base=[-13,12,9,-9][index];image.style.transform=`translate(${x*sp*(narrow?260:550)}px,${y*sp*260}px) rotate(${base+x*sp*28}deg) scale(${1+sp*.08})`});
+ storyTitle.style.transform=`translateY(${-sp*(narrow?35:70)}px) scale(${1+sp*.025})`;
+ const bodyProgress=range(story.p,.3,.7);storyBottom.style.opacity=bodyProgress;storyBottom.style.transform=`translateY(${(1-bodyProgress)*40}px)`;
+ const transitionTwo=ease(range(dishes.p,.25,.48)),transitionThree=ease(range(dishes.p,.6,.84));
+ features[1].style.clipPath=`inset(${(1-transitionTwo)*100}% 0 0)`;
+ features[2].style.clipPath=`inset(${(1-transitionThree)*100}% 0 0)`;
+ features.forEach((feature,index)=>{
+  const entrance=index===0?1:index===1?transitionTwo:transitionThree;
+  const local=index===0?dishes.p:index===1?range(dishes.p,.3,.7):range(dishes.p,.65,1);
+  feature.querySelector('.feature-visual').style.transform=`translateY(${(1-entrance)*130}px) rotate(${mix(7,-3,entrance)+local*3}deg) scale(${mix(.9,1,entrance)})`;
+  feature.querySelector('.feature-copy').style.transform=`translateY(${(1-entrance)*70}px)`;
+  feature.querySelector('.price-stamp').style.rotate=`${local*25}deg`;
+  feature.inert=index!==dishIndex;
+ });
+ dishDots.forEach((dot,index)=>dot.classList.toggle('active',index===dishIndex));
+ kitchenFilm.style.clipPath=`circle(${mix(narrow?26:23,82,ease(film.p))}% at 50% 50%)`;
+ kitchenTitle.style.transform=`translateY(${-film.p*55}px) scale(${1+film.p*.08})`;
+ const galleryTravel=Math.max(0,galleryTrack.scrollWidth-innerWidth+innerWidth*.12);
+ galleryTrack.style.transform=`translateX(${-gallery.p*galleryTravel}px)`;
+ galleryLine.style.transform=`translateX(${gallery.p*300}%)`;
+}
+function scheduleMotion(){if(!motionFrame)motionFrame=requestAnimationFrame(updateMotion)}
+addEventListener('scroll',scheduleMotion,{passive:true});addEventListener('resize',scheduleMotion);
+document.fonts.ready.then(scheduleMotion);addEventListener('load',scheduleMotion);updateMotion();
+
+}
